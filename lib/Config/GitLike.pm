@@ -1,16 +1,13 @@
 package Config::GitLike;
+use Any::Moose;
 
-use strict;
-use warnings;
 use File::Spec;
 use Cwd;
-use Regexp::Common;
-use Any::Moose;
 use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 
 has 'confname' => (
@@ -52,7 +49,7 @@ has 'config_files' => (
 has 'compatible' => (
     is => 'rw',
     isa => 'Bool',
-    default => sub { 0 },
+    default => 0,
 );
 
 sub set_multiple {
@@ -1653,8 +1650,8 @@ L<Config::GitLike::Cascaded|Config::GitLike::Cascaded>, L<http://syncwith.us/>
 
 =head1 LICENSE
 
-You may modify and/or redistribute this software under the same terms
-as Perl 5.8.8.
+This program is free software; you may modify and/or redistribute it
+under the same terms as Perl itself.
 
 =head1 COPYRIGHT
 
