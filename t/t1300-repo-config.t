@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use File::Copy;
-use Test::More tests => 133;
+use Test::More tests => 142;
 use Test::Exception;
 use File::Spec;
 use File::Temp qw/tempdir/;
@@ -1065,33 +1065,38 @@ EOF
 $config->load;
 is( $config->dump, $expect, 'value continued on next line' );
 
-# testing symlinked configuration
-symlink File::Spec->catfile( $config_dirname, 'notyet' ),
-    File::Spec->catfile( $config_dirname, 'myconfig' );
 
-my $myconfig = TestConfig->new(
-    confname => 'myconfig',
-    tmpdir   => $config_dirname
-);
-$myconfig->set(
-    key      => 'test.frotz',
-    value    => 'nitfol',
-    filename => File::Spec->catfile( $config_dirname, 'myconfig' )
-);
-my $notyet = TestConfig->new(
-    confname => 'notyet',
-    tmpdir   => $config_dirname
-);
-$notyet->set(
-    key      => 'test.xyzzy',
-    value    => 'rezrov',
-    filename => File::Spec->catfile( $config_dirname, 'notyet' )
-);
-$notyet->load;
-is( $notyet->get( key => 'test.frotz' ),
-    'nitfol', 'can get 1st val from symlink' );
-is( $notyet->get( key => 'test.xyzzy' ),
-    'rezrov', 'can get 2nd val from symlink' );
+# testing symlinked configuration
+SKIP: {
+    skip 'windows does *not* support symlink', 2 if $^O =~ /MSWin/;
+
+    symlink File::Spec->catfile( $config_dirname, 'notyet' ),
+      File::Spec->catfile( $config_dirname, 'myconfig' );
+
+    my $myconfig = TestConfig->new(
+        confname => 'myconfig',
+        tmpdir   => $config_dirname
+    );
+    $myconfig->set(
+        key      => 'test.frotz',
+        value    => 'nitfol',
+        filename => File::Spec->catfile( $config_dirname, 'myconfig' )
+    );
+    my $notyet = TestConfig->new(
+        confname => 'notyet',
+        tmpdir   => $config_dirname
+    );
+    $notyet->set(
+        key      => 'test.xyzzy',
+        value    => 'rezrov',
+        filename => File::Spec->catfile( $config_dirname, 'notyet' )
+    );
+    $notyet->load;
+    is( $notyet->get( key => 'test.frotz' ),
+        'nitfol', 'can get 1st val from symlink' );
+    is( $notyet->get( key => 'test.xyzzy' ),
+        'rezrov', 'can get 2nd val from symlink' );
+}
 
 ### ADDITIONAL TESTS (not from the git test suite, just things that I didn't
 ### see tests for and think should be tested)
@@ -1214,7 +1219,6 @@ is( $config->get( key => 'section.b' ), 'off',
 
 is( $config->get( key => 'section.a' ), 'off',
     'user config is loaded');
-
 burp(
     $global_config,
     '[section]
@@ -1448,22 +1452,6 @@ lives_and {
 
 throws_ok {
     $config->set(
-        key => 'section.foo\bar.baz',
-        value => 'none',
-        filename => $config_filename,
-    ) } qr/unescaped backslash or \" in subsection/im,
-'subsection names cannot contain unescaped backslash in compat mode';
-
-throws_ok {
-    $config->set(
-        key => 'section.foo"bar.baz',
-        value => 'none',
-        filename => $config_filename,
-    ) } qr/unescaped backslash or \" in subsection/im,
-'subsection names cannot contain unescaped " in compat mode';
-
-throws_ok {
-    $config->set(
         key => "section.foo\nbar.baz",
         value => 'none',
         filename => $config_filename,
@@ -1472,13 +1460,6 @@ throws_ok {
 
 # these should be the case in no-compat mode too
 $config->compatible(0);
-throws_ok {
-    $config->set(
-        key => 'section.foo\bar.baz',
-        value => 'none',
-        filename => $config_filename,
-    ) } qr/unescaped backslash or \" in subsection/im,
-'subsection names cannot contain unescaped backslash in nocompat mode';
 
 throws_ok {
     $config->set(
@@ -1487,14 +1468,6 @@ throws_ok {
         filename => $config_filename,
     ) } qr/invalid key/im,
 'subsection names cannot contain unescaped newlines in nocompat mode';
-
-throws_ok {
-    $config->set(
-        key => 'section.foo"bar.baz',
-        value => 'none',
-        filename => $config_filename,
-    ) } qr/unescaped backslash or \" in subsection/im,
-'subsection names cannot contain unescaped " in nocompat mode';
 
 # Make sure some bad configs throw errors.
 burp(
@@ -1526,3 +1499,66 @@ lives_and {
     is( $config->get( key => 'test.a[]' ), 'b' );
 } 'key can contain but not start with [ in nocompat mode';
 
+
+lives_and {
+    $config->set(
+        key      => "section.foo\\\\bar.baz",
+        value    => 'none',
+        filename => $config_filename,
+    );
+    $config->load;
+    is( $config->get( key => "section.foo\\\\bar.baz" ), 'none' );
+}
+"subsection with escaped backslashes";
+
+# special values in subsection
+
+my %special_in_value =
+  ( backslash => "\\", doublequote => q{"} );
+
+while ( my ( $k, $v ) = each %special_in_value ) {
+    for my $times ( 1 .. 3 ) {
+        my $value = 'chan' . $v x $times . "mon" . $v x $times;
+        lives_and {
+            $config->set(
+                key      => "section.foo",
+                value    => $value,
+                filename => $config_filename,
+            );
+            $config->load;
+            is( $config->get( key => "section.foo" ), $value );
+        }
+        "value with $k occurs $times time"
+          . (
+            $times == 1
+            ? ''
+            : 's'
+          );
+    }
+}
+
+# special chars in subsection, particularly auto-escaping \ and " on set
+my %special_in_subsection =
+  ( backslash => "\\", doublequote => q{"} );
+
+while ( my ( $k, $v ) = each %special_in_subsection ) {
+    for my $times ( 1 .. 3 ) {
+        my $key = 'section.foo' . $v x $times . 'bar' . $v x $times . 'baz';
+
+        lives_and {
+            $config->set(
+                key      => $key,
+                value    => 'none',
+                filename => $config_filename,
+            );
+            $config->load;
+            is( $config->get( key => $key ), 'none' );
+        }
+        "subsection with $k occurs with $times time"
+          . (
+            $times == 1
+            ? ''
+            : 's'
+          );
+    }
+}

@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 
 has 'confname' => (
@@ -227,13 +227,24 @@ sub parse_content {
         #   same rules as for sections
         elsif ($c =~ s/$section_regex//) {
             $section = lc $1;
-            return $args{error}->(
-                content => $args{content},
-                offset =>  $offset,
-                # don't allow quoted subsections to contain unquoted
-                # double-quotes or backslashes
-            ) if $2 && $2 =~ /(?<!\\)(?:"|\\)/;
-            $section .= ".$2" if defined $2;
+            if ($2) {
+                my $subsection = $2;
+                my $check = $2;
+                $check =~ s{\\\\}{}g;
+                $check =~ s{\\"}{}g;
+                return $args{error}->(
+                    content => $args{content},
+                    offset  => $offset,
+
+                    # don't allow quoted subsections to contain unescaped
+                    # double-quotes or backslashes
+                ) if $check =~ /\\|"/;
+
+                $subsection =~ s{\\\\}{\\}g;
+                $subsection =~ s{\\"}{"}g;
+                $section .= ".$subsection";
+            }
+
             $args{callback}->(
                 section    => $section,
                 offset     => $offset,
@@ -274,6 +285,10 @@ sub parse_content {
                 # line continuation (\ character followed by new line)
                 elsif ($c =~ s/\A\\\r?\n//im) {
                     next;
+                }
+                # escaped backslash characters is translated to actual \
+                elsif ($c =~ s/\A\\\\//im) {
+                    $value .= '\\';
                 }
                 # escaped quote characters are part of the value
                 elsif ($c =~ s/\A\\(['"])//im) {
@@ -394,9 +409,9 @@ sub cast {
     );
 
     use constant {
-        BOOL_TRUE_REGEX => qr/^(?:true|yes|on|-?0*1)$/i,
+        BOOL_TRUE_REGEX  => qr/^(?:true|yes|on|-?0*1)$/i,
         BOOL_FALSE_REGEX => qr/^(?:false|no|off|0*)$/i,
-        NUM_REGEX => qr/^-?[0-9]*\.?[0-9]*[kmg]?$/,
+        NUM_REGEX        => qr/^-?[0-9]*\.?[0-9]*[kmg]?$/,
     };
 
     if (defined $args{as} && $args{as} eq 'bool-or-int') {
@@ -613,7 +628,6 @@ sub format_section {
 
     if ($args{section} =~ /^(.*?)\.(.*)$/) {
         my ($section, $subsection) = ($1, $2);
-        $subsection =~ s/(["\\])/\\$1/g;
         my $ret = qq|[$section "$subsection"]|;
         $ret .= "\n" unless $args{bare};
         return $ret;
@@ -705,8 +719,14 @@ sub group_set {
         die "Invalid section name $section\n"
             if $self->_invalid_section_name($section);
 
-        die "Unescaped backslash or \" in subsection $subsection\n"
-            if defined $subsection && $subsection =~ /(?<!\\)(?:"|\\)/;
+        # if the subsection to write contains unescaped \ or ", escape them
+        # automatically
+        my $unescaped_subsection;
+        if ( defined $subsection ) {
+            $unescaped_subsection = $subsection;
+            $subsection =~ s{\\}{\\\\}g;
+            $subsection =~ s{"}{\\"}g;
+        }
 
         $args{value} = $self->cast(
             value => $args{value},
@@ -718,9 +738,10 @@ sub group_set {
         my @replace;
 
         # use this for comparison
-        my $cmp_section
-            = defined $subsection ? join('.', lc $section, $subsection)
-                                  : lc $section;
+        my $cmp_section =
+          defined $unescaped_subsection
+          ? join( '.', lc $section, $unescaped_subsection )
+          : lc $section;
         # ...but this for writing (don't lowercase)
         my $combined_section
             = defined $subsection ? join('.', $section, $subsection)
