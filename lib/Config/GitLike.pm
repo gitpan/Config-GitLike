@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 
 has 'confname' => (
@@ -54,7 +54,7 @@ has 'compatible' => (
 
 sub set_multiple {
     my $self = shift;
-    my ($name, $mult) = @_, 1;
+    my ($name, $mult) = (@_, 1);
     $self->multiple->{$name} = $mult;
 }
 
@@ -794,9 +794,13 @@ sub group_set {
         die "Multiple occurrences of non-multiple key?"
             if @replace > 1 && !$args{multiple};
 
+        # We're only replacing the first occurrance unless they said
+        # to replace them all.
+        @replace = ($replace[0]) if @replace and $args{value} and not $args{replace_all};
+
         if (defined $args{value}) {
             if (@replace
-                    && (!$args{multiple} || $args{replace_all})) {
+                    && (!$args{multiple} || $args{filter} || $args{replace_all})) {
                 # Replacing existing value(s)
 
                 # if the string we're replacing with is not the same length as
