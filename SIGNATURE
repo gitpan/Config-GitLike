@@ -12,11 +12,11 @@ the distribution may already have been compromised, and you should
 not run its Makefile.PL or Build.PL.
 
 -----BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Hash: SHA1
 
-SHA1 2daac330ae24db9a46c2d79a12d66f63c269af71 Changes
-SHA1 e64d07b95f1af7d671d5d4a3d5cbe4f204dcc801 MANIFEST
-SHA1 8c2a9bb6ed304bf00b883bdcd3adbd4e9fef9e74 META.yml
+SHA1 44eef7b9124a89ff64566ca02bf2806fd6fde63b Changes
+SHA1 37111fe4f5de6afc374ebc74683eb77cc96bc5ec MANIFEST
+SHA1 62fe2f5b8797b6d85fc4f7897b91cd5aec9a02d7 META.yml
 SHA1 652f43d3bb9a33ac5995713dee8716c4d384242f Makefile.PL
 SHA1 fd5f3c4f0418efee3b9b16cf8c3902e8374909df inc/Module/Install.pm
 SHA1 7cd7c349afdf3f012e475507b1017bdfa796bfbd inc/Module/Install/Base.pm
@@ -26,27 +26,17 @@ SHA1 3e83972921d54198d1246f7278f08664006cd65d inc/Module/Install/Makefile.pm
 SHA1 12bf1867955480d47d5171a9e9c6a96fabe0b58f inc/Module/Install/Metadata.pm
 SHA1 f7ee667e878bd2faf22ee9358a7b5a2cc8e91ba4 inc/Module/Install/Win32.pm
 SHA1 8ed29d6cf217e0977469575d788599cbfb53a5ca inc/Module/Install/WriteAll.pm
-SHA1 1cf3f261b0086c2571db24c6045793cc7ef0b45b lib/Config/GitLike.pm
-SHA1 9426d508e6841b28449fd5bda97abd1b4f0cbe19 lib/Config/GitLike/Cascaded.pm
-SHA1 5444576afe2536921e404e87023181f70f37cc75 lib/Config/GitLike/Git.pm
+SHA1 73154d46c1e58f11b9c162b5682fc2342cd5b26c lib/Config/GitLike.pm
+SHA1 7085bda091bd2504987e9519a9788bcf63d339ef lib/Config/GitLike/Cascaded.pm
+SHA1 2bb7a846da36b117abf39194033bb1bbdb076c45 lib/Config/GitLike/Git.pm
 SHA1 8c30f69743e7a9d743d7206f2306ff9f12bb59a0 t/00_use.t
 SHA1 cde69d95c8c39de4f9816b7bfb845b2d96554a7e t/lib/TestConfig.pm
 SHA1 7e5420d1d658a8ccced4d55287b454cd8a7fea7f t/t1300-repo-config.t
 SHA1 53b21b0f0227909dd299d8adb033f5aff8f5fc42 t/util/translate.pl
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v2.0.14 (GNU/Linux)
 
-iQIcBAEBCAAGBQJLQMfUAAoJEGSVn+mDjfGcNaAP+gJzpEZFAwdMFHK3dQkqRLkB
-7uG8ziaAiGSpjCDHmwRp8x/iHnqPTK6UZpIb6ZgUuzOhu1am/egjzhgW4GeDfQRx
-Gv8V0EXoctmvVD90b8G1LJRcyd1oVvHqJdhyemgmKVO5/w5LzFZmLHbtRJccN1wR
-+7K7+gxKa2z30ck3ex0KSv3ifVKAkINOaFwAqrfwwVoF+p5EVCMReoofG8jNycwE
-7xhkehWQPOZEnz5NhGqFcSiF1ixpB23mQavL8UJiPdDZCrlOVGnRPMVQGevLK3ZC
-vyVlvGOc0LJJzIhFDWiMlJ/dittf/0EY5oXesmZp+HOlJCx3y8lhIF7sP+PqCYsi
-7Hdk383mvCTWekw8w7vY0KJEfCfYyCZuKfgATRZZBaeFFR57uW/Wd0bj3QPGKDxX
-LYnNrbJ2pPdIVUv47p6EFBqDrFiElbV9Ov0fiZEPXKcyUUI3tQs++CVDHxZdy0oH
-mQaqkJ4zlbr249sozVoUztN9dRflTIg+jYH3QCUhHTmsiLPpYBJi12FRgSDYpZs1
-pt2Q9Yi9+R26UuYkykVqbmoL3mvP8BQISEM8QspYTVsA44P0VlijsSIdx9IyDAOu
-BTzfQc0HuaVUJp81SkRt0us9d0Y0tyOieci+HftFCW0WyD0VKEfHWS2CUtRSbOus
-fkZS2Oxqu4tULAtAJgec
-=ylIC
+iEYEARECAAYFAku20GwACgkQMflWJZZAbqA7SACcCCobP0fG5YN4bMNSohtv5XGw
+Gm8AoMZc1IWrzZGPVfKwxiTK0MbN1NLW
+=zyGq
 -----END PGP SIGNATURE-----

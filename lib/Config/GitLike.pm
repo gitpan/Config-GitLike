@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 
 has 'confname' => (
@@ -52,6 +52,12 @@ has 'compatible' => (
     default => 0,
 );
 
+has 'cascade' => (
+    is => 'rw',
+    isa => 'Bool',
+    default => 0,
+);
+
 sub set_multiple {
     my $self = shift;
     my ($name, $mult) = (@_, 1);
@@ -87,16 +93,18 @@ sub load_dirs {
     my $path = shift;
     my($vol, $dirs, undef) = File::Spec->splitpath( $path, 1 );
     my @dirs = File::Spec->splitdir( $dirs );
+    my @found;
     while (@dirs) {
         my $path = File::Spec->catpath(
             $vol, File::Spec->catdir(@dirs), $self->dir_file
         );
         if (-f $path) {
-            $self->load_file( $path );
-            last;
+            push @found, $path;
+            last unless $self->cascade;
         }
         pop @dirs;
     }
+    $self->load_file( $_ ) for reverse @found;
 }
 
 sub global_file {
@@ -139,8 +147,11 @@ sub _read_config {
 sub load_file {
     my $self = shift;
     my ($filename) = @_;
-    my $c = $self->_read_config($filename);
+    $self->data({}) unless $self->is_loaded;
 
+    return $self->data if grep {$_ eq $filename} @{$self->config_files};
+
+    my $c = $self->_read_config($filename);
     $self->parse_content(
         content  => $c,
         callback => sub {
@@ -1296,7 +1307,7 @@ scalar context.
 =head2 config_filenames
 
 An array reference containing the absolute filenames of all config files
-that are currently loaded.
+that are currently loaded, in the order they were loaded.
 
 =head2 get
 
@@ -1435,6 +1446,12 @@ Parameters:
 
 Just a convenience wrapper around L<"rename_section"> for readability's sake.
 Removes the given section (which you can do by renaming to nothing as well).
+
+=head2 cascade( $bool )
+
+Gets or sets if only the B<deepest> configuration file in a directory
+tree is loaded, or if all of them are loaded, shallowest to deepest.
+Alternately, C<cascade =E<gt> 1> can be passed to C<new>.
 
 =head1 METHODS YOU MAY WISH TO OVERRIDE
 
@@ -1670,8 +1687,8 @@ configuration files or code snippets.
 =head1 SEE ALSO
 
 L<http://www.kernel.org/pub/software/scm/git/docs/git-config.html#_configuration_file>,
-L<Config::GitLike::Cascaded|Config::GitLike::Cascaded>, L<http://syncwith.us/>
-(C<Config::GitLike> is used in Prophet/SD and provides a working example)
+L<Config::GitLike::Git>, L<http://syncwith.us/> (C<Config::GitLike> is
+used in Prophet/SD and provides a working example)
 
 =head1 LICENSE
 
@@ -1680,7 +1697,7 @@ under the same terms as Perl itself.
 
 =head1 COPYRIGHT
 
-Copyright 2009 Best Practical Solutions, LLC
+Copyright 2010 Best Practical Solutions, LLC
 
 =head1 AUTHORS
 
