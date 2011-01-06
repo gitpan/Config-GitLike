@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 
 has 'confname' => (
@@ -714,9 +714,13 @@ sub group_set {
         my %args = %{$args_hash};
 
         my ($section, $subsection, $name) = _split_key($args{key});
-        my $key = join( '.',
-            grep { defined } (lc $section, $subsection, lc $name),
-        );
+        my $key;
+        {
+            no warnings 'uninitialized';
+            $key = join( '.',
+                grep { defined } (lc $section, $subsection, lc $name),
+            );
+        }
 
         $args{multiple} = $self->is_multiple($key)
             unless defined $args{multiple};
