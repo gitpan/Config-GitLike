@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 
 has 'confname' => (
@@ -121,7 +121,7 @@ sub load_global {
 sub user_file {
     my $self = shift;
     return
-        File::Spec->catfile( $ENV{'HOME'}, "." . $self->confname );
+        File::Spec->catfile( "~", "." . $self->confname );
 }
 
 sub load_user {
@@ -145,13 +145,30 @@ sub _read_config {
 }
 
 sub load_file {
-    my $self = shift;
+    my $ref = shift;
     my ($filename) = @_;
-    $self->data({}) unless $self->is_loaded;
+
+    my $self;
+    if (ref $ref) {
+        $self = $ref;
+    } else {
+        # Set up a temporary object
+        $self = $ref->new( confname => "" );
+    }
+
+    # Do some canonicalization
+    $filename =~ s/~/$ENV{'HOME'}/g;
+    $filename = File::Spec->rel2abs($filename);
 
     return $self->data if grep {$_ eq $filename} @{$self->config_files};
 
     my $c = $self->_read_config($filename);
+    unless (defined $c) {
+        die "Failed to load $filename: $!\n" if not ref $ref;
+        return;
+    }
+
+    $self->data({}) unless $self->is_loaded;
     $self->parse_content(
         content  => $c,
         callback => sub {
@@ -333,7 +350,7 @@ sub parse_content {
                     $value .= $v;
                 }
                 # valid value (no escape codes)
-                elsif ($c =~ s/\A([^\t \\\n]+)//im) {
+                elsif ($c =~ s/\A([^\t \\\n"]+)//im) {
                     $value .= $1;
                 # unparseable
                 }
@@ -597,6 +614,8 @@ sub get_regexp {
 
 sub dump {
     my $self = shift;
+
+    $self->load unless $self->is_loaded;
 
     return %{$self->data} if wantarray;
 
@@ -1132,8 +1151,12 @@ Code that uses this config module might look like:
 
     use Config::GitLike;
 
+    # just load a specific file
+    my $data = Config::GitLike->load_file("~/.fooconf");
+
+    # or use the object interface to load /etc/config, ~/.config, and
+    # `pwd`/.config
     my $c = Config::GitLike->new(confname => 'config');
-    $c->load;
 
     $c->get( key => 'section.name' );
     # make the return value a Perl true/false value
@@ -1221,7 +1244,7 @@ L<http://www.kernel.org/pub/software/scm/git/docs/git-config.html#_configuration
 for details on the syntax of git configuration files. We won't waste pixels
 on the nitty gritty here.
 
-While the behaviour of a couple of this module's methods differ slightly
+While the behavior of a couple of this module's methods differ slightly
 from the C<git config> equivalents, this module can read any config file
 written by git. The converse is usually true, but only if you don't take
 advantage of this module's increased permissiveness when it comes to key
@@ -1262,7 +1285,7 @@ for each type.
 All get and set methods can filter what values they return via their
 C<filter> parameter, which is expected to be a string that is a valid
 regex. If you want to filter items OUT instead of IN, you can
-prefix your regex with a ! and that'll do the trick.
+prefix your regex with a ! and that will do the trick.
 
 Now, on the the methods!
 
@@ -1273,6 +1296,9 @@ There are the methods you're likely to use the most.
 =head2 new( confname => 'config' )
 
 Create a new configuration object with the base config name C<confname>.
+If you are interested simply in loading one specific file, and not in
+automatically loading a global file, a per-user file, and a
+per-directory file, see L</load_file>, below.
 
 C<confname> is used to construct the filenames that will be loaded; by
 default, these are C</etc/confname> (global configuration file),
@@ -1296,6 +1322,10 @@ passing in a new name (and then reloading via L<"load">).
 
 =head2 load
 
+This method is usually called implicitly on the first L</get>,
+L</get_all>, L</get_regex>, or L</dump> call used, and is only necessary
+if you want to explicitly reload the data.
+
 Load the global, local, and directory configuration file with the filename
 C<confname>(if they exist). Configuration variables loaded later
 override those loaded earlier, so variables from the directory
@@ -1308,7 +1338,7 @@ Returns a hash copy of all loaded configuration data stored in the module
 after the files have been loaded, or a hashref to this hash in
 scalar context.
 
-=head2 config_filenames
+=head2 config_files
 
 An array reference containing the absolute filenames of all config files
 that are currently loaded, in the order they were loaded.
@@ -1407,20 +1437,15 @@ values. To override this, pass in C<multiple =E<gt> 1>. If you want to replace
 all instances of a multiple-valued key with a new value, you need to pass
 in C<replace_all =E<gt> 1> as well.
 
-=head2 group_set
-
-Parameters:
-
-    filename => '/home/foo/.bar'
-    args_ref => $ref
+=head2 group_set( $filename, $array_ref )
 
 Same as L<"set">, but set a group of variables at the same time without
 writing to disk separately for each.
 
-C<args_ref> is an array reference containing a list of hash references which
-are essentially hashes of arguments to C<set>, excluding the C<filename>
-argument since that is specified separately and the same file is used for all
-variables to be set at once.
+C<$array_ref> contains a list of hash references which are essentially hashes
+of arguments to C<set>, excluding the C<$filename> argument since that is
+specified separately and the same file is used for all variables to be set at
+once.
 
 =head2 rename_section
 
@@ -1456,6 +1481,10 @@ Removes the given section (which you can do by renaming to nothing as well).
 Gets or sets if only the B<deepest> configuration file in a directory
 tree is loaded, or if all of them are loaded, shallowest to deepest.
 Alternately, C<cascade =E<gt> 1> can be passed to C<new>.
+
+=head2 origins
+
+Returns a hash mapping each config key with the file it was loaded from.
 
 =head1 METHODS YOU MAY WISH TO OVERRIDE
 
@@ -1524,9 +1553,8 @@ Takes a string containing the path to a file, opens it if it exists, loads its
 config variables into memory, and returns the currently loaded config
 variables (a hashref).
 
-Note that you ought to only call this subroutine with an argument that you
-know exists, otherwise config files that don't exist will be recorded as
-havind been loaded.
+This method can also be called as a class method, which will die if the
+file cannot be read.
 
 =head2 parse_content
 
@@ -1615,7 +1643,7 @@ Return C<value> cast into the type specified by C<as>.
 Valid values for C<as> are C<bool>, C<int>, C<num>, or C<bool-or-num>. For
 C<bool>, C<true>, C<yes>, C<on>, C<1>, and undef are translated into a true
 value (for Perl); anything else is false. Specifying a true value for the
-C<human> arg will get you a human-readable 'true' or 'false' rather than a
+C<human> argument will get you a human-readable 'true' or 'false' rather than a
 value that plays along with Perl's definition of truthiness (0 or 1).
 
 For C<int>s and C<num>s, if C<value> ends in C<k>, C<m>, or C<g>, it will be
