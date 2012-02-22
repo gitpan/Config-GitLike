@@ -25,4 +25,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/bestpractical/config-gitlike
-version: 1.07
+version: 1.08

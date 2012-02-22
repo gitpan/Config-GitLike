@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.07';
+our $VERSION = '1.08';
 
 
 has 'confname' => (
@@ -114,7 +114,6 @@ sub global_file {
 
 sub load_global {
     my $self = shift;
-    return unless -f $self->global_file;
     return $self->load_file( $self->global_file );
 }
 
@@ -126,7 +125,6 @@ sub user_file {
 
 sub load_user {
     my $self = shift;
-    return unless -f $self->user_file;
     return $self->load_file( $self->user_file );
 }
 
@@ -135,6 +133,7 @@ sub _read_config {
     my $self = shift;
     my $filename = shift;
 
+    return unless -f $filename and -r $filename;
     open(my $fh, '<', $filename) or return;
 
     my $c = do {local $/; <$fh>};
@@ -1554,7 +1553,8 @@ config variables into memory, and returns the currently loaded config
 variables (a hashref).
 
 This method can also be called as a class method, which will die if the
-file cannot be read.
+file cannot be read.  If called as an instance method, returns undef on
+failure.
 
 =head2 parse_content
 

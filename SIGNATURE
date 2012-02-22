@@ -14,9 +14,9 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 d927e040b1552f8139aca51826ba82a30614ff6a Changes
+SHA1 618657d3e94d75ea3eb0210214ba317e9fb34bc9 Changes
 SHA1 c978a1d6e9ccefe9c8512ce409451c70004db59c MANIFEST
-SHA1 3a2dd13ea080aa9dace3bedfda3849f126b584b2 META.yml
+SHA1 2a1698a924867daa5305daf5e548932d4b8df285 META.yml
 SHA1 14f45ca5f7c2a1117289045d76281a8eab0ca2e8 Makefile.PL
 SHA1 7b4ae50ebac72d20761171c4c2b50c206344ea40 inc/Module/Install.pm
 SHA1 d9fe55a427fe2fd75b5029afeeaa61b592e07f79 inc/Module/Install/Base.pm
@@ -27,7 +27,7 @@ SHA1 73ab91490a628452cc140db72ef9d13a1326d211 inc/Module/Install/Makefile.pm
 SHA1 8ce3f2b414e4617e6233dd4ba10830f8c5d672ec inc/Module/Install/Metadata.pm
 SHA1 3b0acd2eeac93a0afe48120f5648f0db362e5bbf inc/Module/Install/Win32.pm
 SHA1 f08924f051e623f8e09fa6a121993c4a9cf7d9eb inc/Module/Install/WriteAll.pm
-SHA1 124dff75ccebd8b8c363b9110f44c8450fdf464c lib/Config/GitLike.pm
+SHA1 92ef71379489cfa4d5410c15ae92c8967728ac25 lib/Config/GitLike.pm
 SHA1 f87bd57755c1973e80f988b6bfecc498b7bb4604 lib/Config/GitLike/Cascaded.pm
 SHA1 7ada70145453fc5adbacf1d1d22af3e2932a5a33 lib/Config/GitLike/Git.pm
 SHA1 8c30f69743e7a9d743d7206f2306ff9f12bb59a0 t/00_use.t
@@ -37,7 +37,7 @@ SHA1 53b21b0f0227909dd299d8adb033f5aff8f5fc42 t/util/translate.pl
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAk6nehcACgkQMflWJZZAbqDyeQCcDAHg4REPDxJssN+C4ScTsfTd
-lc4AniahLg3rVPAEwdMqVPrv2u2P+EsX
-=LETn
+iEYEARECAAYFAk9EUzYACgkQMflWJZZAbqBf7gCfWJ87ZothsUpUK3A2W2j+WffM
+xfwAoK2GUknpP+ZOZiuoqgvcw5NZivjc
+=WA2D
 -----END PGP SIGNATURE-----
