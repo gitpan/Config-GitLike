@@ -7,7 +7,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.08';
+our $VERSION = '1.09';
 
 
 has 'confname' => (
@@ -56,6 +56,11 @@ has 'cascade' => (
     is => 'rw',
     isa => 'Bool',
     default => 0,
+);
+
+has 'encoding' => (
+    is => 'rw',
+    isa => 'Maybe[Str]',
 );
 
 sub set_multiple {
@@ -135,6 +140,9 @@ sub _read_config {
 
     return unless -f $filename and -r $filename;
     open(my $fh, '<', $filename) or return;
+    if (my $encoding = $self->encoding) {
+        binmode $fh, ":encoding($encoding)";
+    }
 
     my $c = do {local $/; <$fh>};
 
@@ -287,6 +295,10 @@ sub parse_content {
         #
         # in compatible mode, keys can contain only 0-9a-z-
         elsif ($c =~ s/$key_regex//) {
+            return $args{error}->(
+                content => $args{content},
+                offset  => $offset,
+            ) unless defined $section;
             $args{callback}->(
                 section    => $section,
                 name       => lc $1,
@@ -297,6 +309,10 @@ sub parse_content {
         # key/value pairs (this particular regex matches only the key part and
         # the =, with unlimited whitespace around the =)
         elsif ($c =~ s/$key_value_regex//) {
+            return $args{error}->(
+                content => $args{content},
+                offset  => $offset,
+            ) unless defined $section;
             my $name = lc $1;
             my $value = "";
             # parse the value
@@ -396,9 +412,9 @@ sub define {
         origin  => undef,
         @_,
     );
-    return unless defined $args{name};
+    return unless defined $args{section} and defined $args{name};
     $args{name} = lc $args{name};
-    my $key = join(".", grep {defined} @args{qw/section name/});
+    my $key = join(".", @args{qw/section name/});
 
     # we're either adding a whole new key or adding a multiple key from
     # the same file
@@ -495,12 +511,10 @@ sub cast {
     }
 }
 
-sub get {
+sub _get {
     my $self = shift;
     my %args = (
-        key => undef,
-        as  => undef,
-        human  => undef,
+        key    => undef,
         filter => '',
         @_,
     );
@@ -511,23 +525,21 @@ sub get {
         grep { defined } (lc $section, $subsection, lc $name),
     );
 
-    return undef unless exists $self->data->{$args{key}};
+    return () unless exists $self->data->{$args{key}};
     my $v = $self->data->{$args{key}};
-    if (ref $v) {
-        my @results;
-        if (defined $args{filter}) {
-            if ($args{filter} =~ s/^!//) {
-                @results = grep { !/$args{filter}/i } @{$v};
-            }
-            else {
-                @results = grep { m/$args{filter}/i } @{$v};
-            }
+    my @values = ref $v ? @{$v} : ($v);
+    if (defined $args{filter} and length $args{filter}) {
+        if ($args{filter} eq "!") {
+            @values = ();
         }
-        die "Multiple values" unless @results <= 1;
-        $v = $results[0];
+        elsif ($args{filter} =~ s/^!//) {
+            @values = grep { not defined or not m/$args{filter}/i } @values;
+        }
+        else {
+            @values = grep { defined and m/$args{filter}/i } @values;
+        }
     }
-    return $self->cast( value => $v, as => $args{as},
-        human => $args{human} );
+    return @values;
 }
 
 # I'm pretty sure that someone can come up with an edge case where stripping
@@ -543,33 +555,36 @@ sub _remove_balanced_quotes {
     return $key;
 }
 
+sub get {
+    my $self = shift;
+    my %args = (
+        key    => undef,
+        as     => undef,
+        human  => undef,
+        filter => '',
+        @_,
+    );
+
+    my @v = $self->_get( %args );
+    return undef unless @v;
+    die "Multiple values" if @v > 1;
+
+    return $self->cast( value => $v[0], as => $args{as},
+        human => $args{human} );
+}
+
 sub get_all {
     my $self = shift;
     my %args = (
-        key => undef,
-        as  => undef,
+        key    => undef,
+        as     => undef,
+        human  => undef,
+        filter => '',
         @_,
     );
-    $self->load unless $self->is_loaded;
-    my ($section, $subsection, $name) = _split_key($args{key});
-    $args{key} = join('.',
-        grep { defined } (lc $section, $subsection, lc $name),
-    );
 
-    return undef unless exists $self->data->{$args{key}};
-    my $v = $self->data->{$args{key}};
-    my @v = ref $v ? @{$v} : ($v);
-
-    if (defined $args{filter}) {
-        if ($args{filter} =~ s/^!//) {
-            @v = grep { !/$args{filter}/i } @v;
-        }
-        else {
-            @v = grep { m/$args{filter}/i } @v;
-        }
-    }
-
-    @v = map {$self->cast( value => $_, as => $args{as} )} @v;
+    my @v = $self->_get( %args );
+    @v = map {$self->cast( value => $_, as => $args{as}, human => $args{human} )} @v;
     return wantarray ? @v : \@v;
 }
 
@@ -577,36 +592,45 @@ sub get_regexp {
     my $self = shift;
 
     my %args = (
-        key => undef,
-        filter => undef,
-        as  => undef,
+        key    => undef,
+        as     => undef,
+        human  => undef,
+        filter => '',
         @_,
     );
 
     $self->load unless $self->is_loaded;
 
-    $args{key} = lc $args{key};
+    $args{key} = '.' unless defined $args{key} and length $args{key};
 
     my %results;
     for my $key (keys %{$self->data}) {
-        $results{$key} = $self->data->{$key} if lc $key =~ m/$args{key}/i;
+        $results{$key} = $self->data->{$key} if $key =~ m/$args{key}/i;
     }
 
-    if (defined $args{filter}) {
-        if ($args{filter} =~ s/^!//) {
-            map { delete $results{$_} if $results{$_} =~ m/$args{filter}/i }
-                keys %results;
+    if (defined $args{filter} and length $args{filter}) {
+        if ($args{filter} eq "!") {
+            %results = ();
+        }
+        elsif ($args{filter} =~ s/^!//) {
+            for (keys %results) {
+                delete $results{$_} if defined $results{$_}
+                    and $results{$_} =~ m/$args{filter}/i;
+            }
         }
         else {
-            map { delete $results{$_} if $results{$_} !~ m/$args{filter}/i }
-                keys %results;
+            for (keys %results) {
+                delete $results{$_} if not defined $results{$_}
+                    or $results{$_} !~ m/$args{filter}/i;
+            }
         }
     }
 
     @results{keys %results} =
         map { $self->cast(
                 value => $results{$_},
-                as => $args{as}
+                as    => $args{as},
+                human => $args{human},
             ); } keys %results;
     return wantarray ? %results : \%results;
 }
@@ -699,24 +723,19 @@ sub _split_key {
         $section = $key;
     }
     else {
-        $key =~ /^(?:(.*)\.)?(.*)$/;
+        $key =~ /^(.*)\.(.*)$/;
         # If we wanted, we could interpret quoting of the section name to
         # allow for setting keys with section names including . characters.
         # But git-config doesn't do that, so we won't bother for now. (Right
         # now it will read these section names correctly but won't set them.)
-        ($section, $name) = map { _remove_balanced_quotes($_) }
-            grep { defined $_ } ($1, $2);
+        ($section, $name) = map { _remove_balanced_quotes($_) } ($1, $2);
     }
 
     # Make sure the section name we're comparing against has
     # case-insensitive section names and case-sensitive subsection names.
-    if (defined $section) {
-        $section =~ m/^([^.]+)(?:\.(.*))?$/;
-        ($section, $subsection) = ($1, $2);
-    }
-    else {
-        ($section, $subsection) = (undef) x 2;
-    }
+    $section =~ m/^([^.]+)(?:\.(.*))?$/;
+    ($section, $subsection) = ($1, $2);
+
     return ($section, $subsection, $name);
 }
 
@@ -732,13 +751,9 @@ sub group_set {
         my %args = %{$args_hash};
 
         my ($section, $subsection, $name) = _split_key($args{key});
-        my $key;
-        {
-            no warnings 'uninitialized';
-            $key = join( '.',
-                grep { defined } (lc $section, $subsection, lc $name),
-            );
-        }
+        my $key = join( '.',
+            grep { defined } (lc $section, $subsection, lc $name),
+        );
 
         $args{multiple} = $self->is_multiple($key)
             unless defined $args{multiple};
@@ -799,12 +814,15 @@ sub group_set {
                 my $matched = 0;
                 # variable names are case-insensitive
                 if (lc $name eq $got{name}) {
-                    if (defined $args{filter}) {
+                    if (defined $args{filter} and length $args{filter}) {
                         # copy the filter arg here since this callback may
                         # be called multiple times and we don't want to
                         # modify the original value
                         my $filter = $args{filter};
-                        if ($filter =~ s/^!//) {
+                        if ($filter eq "!") {
+                            # Never matches
+                        }
+                        elsif ($filter =~ s/^!//) {
                             $matched = 1 if ($got{value} !~ m/$filter/i);
                         }
                         elsif ($got{value} =~ m/$filter/i) {
@@ -996,6 +1014,9 @@ sub _write_config {
     # way git does it)
     sysopen(my $fh, "${filename}.lock", O_CREAT|O_EXCL|O_WRONLY)
         or die "Can't open ${filename}.lock for writing: $!\n";
+    if (my $encoding = $self->encoding) {
+        binmode $fh, ":encoding($encoding)";
+    }
     print $fh $content;
     close $fh;
 
@@ -1118,6 +1139,31 @@ sub remove_section {
     # remove section is just a rename to nothing
     return $self->rename_section( from => $args{section}, filename =>
         $args{filename} );
+}
+
+sub add_comment {
+    my $self = shift;
+    my (%args) = (
+        comment   => undef,
+        filename  => undef,
+        indented  => undef,
+        semicolon => undef,
+        @_
+    );
+
+    my $filename = $args{filename} or die "No filename passed to add_comment()";
+    die "No comment to add\n" unless defined $args{comment};
+
+    # Comment, preserving leading whitespace.
+    my $chars = $args{indented} ? '[[:blank:]]*' : '';
+    my $char  = $args{semicolon} ? ';' : '#';
+    (my $comment = $args{comment}) =~ s/^($chars)/$1$char /mg;
+    $comment .= "\n" if $comment !~ /\n\z/;
+
+    my $c = $self->_read_config($filename);
+    $c = '' unless defined $c;
+
+    return $self->_write_config( $filename, $c . $comment );
 }
 
 1;
@@ -1292,7 +1338,7 @@ Now, on the the methods!
 
 There are the methods you're likely to use the most.
 
-=head2 new( confname => 'config' )
+=head2 new( confname => 'config', encoding => 'UTF-8' )
 
 Create a new configuration object with the base config name C<confname>.
 If you are interested simply in loading one specific file, and not in
@@ -1312,6 +1358,13 @@ If you wish to enforce only being able to read/write config files that
 git can read or write, pass in C<compatible =E<gt> 1> to this
 constructor. The default rules for some components of the config
 file are more permissive than git's (see L<"DIFFERENCES FROM GIT-CONFIG">).
+
+If you know that your Git config files are encoded with a known
+character encoding, pass in C<encoding =E<gt> $encoding> to specify the
+name of the encoding. Config::GitLike will then properly serialize and
+deserialize the files with that encoding.  Note that configutation files
+written with C<git config> are usually, but are not required to be, in
+UTF-8.
 
 =head2 confname
 
@@ -1348,19 +1401,21 @@ Parameters:
 
     key => 'sect.subsect.key'
     as => 'int'
-    filter => '!foo
+    human => 1
+    filter => '!foo'
 
 Return the config value associated with C<key> cast as an C<as>.
 
-The C<key> option is required (will return undef if unspecified); the C<as>
-option is not (will return a string by default). Sections and subsections
-are specified in the key by separating them from the key name with a .
-character. Sections, subsections, and keys may all be quoted (double or
-single quotes).
+The C<key> option is required (will return undef if unspecified); the
+C<as> amd C<human> options are not (see L<cast> for their
+meaning). Sections and subsections are specified in the key by
+separating them from the key name with a C<.> character. Sections,
+subsections, and keys may all be quoted (double or single quotes).
 
-If C<key> doesn't exist in the config, undef is returned. Dies with
-the exception "Multiple values" if the given key has more than one
-value associated with it. (Use L<"get_all"> to retrieve multiple values.)
+If C<key> doesn't exist in the config, or has no values which match the
+filter, undef is returned. Dies with the exception "Multiple values" if
+the given key has more than one value associated with it which match the
+filter. (Use L<"get_all"> to retrieve multiple values.)
 
 Calls L<"load"> if it hasn't been done already. Note that if you've run any
 C<set> calls to the loaded configuration files since the last time they were
@@ -1372,8 +1427,9 @@ configuration data may not match the configuration variables on-disk.
 Parameters:
 
     key => 'section.sub'
-    filter => 'regex'
     as => 'int'
+    human => 1
+    filter => 'regex'
 
 Like L<"get"> but does not fail if the number of values for the key is not
 exactly one.
@@ -1385,8 +1441,9 @@ Returns a list of values (or an arrayref in scalar context).
 Parameters:
 
     key => 'regex'
-    filter => 'regex'
     as => 'bool'
+    human => 1
+    filter => 'regex'
 
 Similar to L<"get_all"> but searches for values based on a key regex.
 
@@ -1474,6 +1531,23 @@ Parameters:
 
 Just a convenience wrapper around L<"rename_section"> for readability's sake.
 Removes the given section (which you can do by renaming to nothing as well).
+
+=head2 add_comment
+
+Parameters:
+
+     comment   => "Begin editing here\n and then stop",
+     filename  => '/file/to/edit'
+     indented  => 1,
+     semicolon => 0,
+
+Add a comment to the specified configuration file. The C<comment> and
+C<filename> parameters are required. Comments will be added to the file with
+C<# > at the begnning of each line of the comment. Pass a true value to
+C<semicolon> if you'd rather they start with C<; >. If your comments are
+indented with leading white space, and you want that white space to appear in
+front of the comment character, rather than after, pass a true value to
+C<indented>.
 
 =head2 cascade( $bool )
 
@@ -1628,7 +1702,7 @@ Given a section, a key name, and a value¸ store this information
 in memory in the config object.
 
 Returns the value that was just defined on success, or undef
-if no name is given and thus the key cannot be defined.
+if no name and section were given and thus the key cannot be defined.
 
 =head2 cast
 

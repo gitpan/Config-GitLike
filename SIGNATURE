@@ -14,30 +14,32 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 618657d3e94d75ea3eb0210214ba317e9fb34bc9 Changes
-SHA1 c978a1d6e9ccefe9c8512ce409451c70004db59c MANIFEST
-SHA1 2a1698a924867daa5305daf5e548932d4b8df285 META.yml
+SHA1 7fe64993f97feca70beb57de929a3cbc9d2ef9f5 Changes
+SHA1 a92f70ed16c3900e9039b7d6b666ea25ec13e658 MANIFEST
+SHA1 811ea538b111fdd4eb538bda883bd8970c5b2f25 META.yml
 SHA1 14f45ca5f7c2a1117289045d76281a8eab0ca2e8 Makefile.PL
-SHA1 7b4ae50ebac72d20761171c4c2b50c206344ea40 inc/Module/Install.pm
-SHA1 d9fe55a427fe2fd75b5029afeeaa61b592e07f79 inc/Module/Install/Base.pm
-SHA1 62d3922826d9f89f20c185e7031ac8f028504745 inc/Module/Install/Can.pm
+SHA1 8a924add836b60fb23b25c8506d45945e02f42f4 inc/Module/Install.pm
+SHA1 2d0fad3bf255f8c1e7e1e34eafccc4f595603ddc inc/Module/Install/Base.pm
+SHA1 f0e01fff7d73cd145fbf22331579918d4628ddb0 inc/Module/Install/Can.pm
 SHA1 57890d379d1c66da7743cf1a07ebae00e078a4f2 inc/Module/Install/ExtraTests.pm
-SHA1 dc809f64fb70a26b069a36f8d3d353d520dbb7e1 inc/Module/Install/Fetch.pm
-SHA1 73ab91490a628452cc140db72ef9d13a1326d211 inc/Module/Install/Makefile.pm
-SHA1 8ce3f2b414e4617e6233dd4ba10830f8c5d672ec inc/Module/Install/Metadata.pm
-SHA1 3b0acd2eeac93a0afe48120f5648f0db362e5bbf inc/Module/Install/Win32.pm
-SHA1 f08924f051e623f8e09fa6a121993c4a9cf7d9eb inc/Module/Install/WriteAll.pm
-SHA1 92ef71379489cfa4d5410c15ae92c8967728ac25 lib/Config/GitLike.pm
+SHA1 7328966e4fda0c8451a6d3850704da0b84ac1540 inc/Module/Install/Fetch.pm
+SHA1 b62ca5e2d58fa66766ccf4d64574f9e1a2250b34 inc/Module/Install/Makefile.pm
+SHA1 1aa925be410bb3bfcd84a16985921f66073cc1d2 inc/Module/Install/Metadata.pm
+SHA1 e4196994fa75e98bdfa2be0bdeeffef66de88171 inc/Module/Install/Win32.pm
+SHA1 c3a6d0d5b84feb3280622e9599e86247d58b0d18 inc/Module/Install/WriteAll.pm
+SHA1 06c31a307c5aa568df34519bbbeaf9fc8dc4188d lib/Config/GitLike.pm
 SHA1 f87bd57755c1973e80f988b6bfecc498b7bb4604 lib/Config/GitLike/Cascaded.pm
 SHA1 7ada70145453fc5adbacf1d1d22af3e2932a5a33 lib/Config/GitLike/Git.pm
 SHA1 8c30f69743e7a9d743d7206f2306ff9f12bb59a0 t/00_use.t
-SHA1 cde69d95c8c39de4f9816b7bfb845b2d96554a7e t/lib/TestConfig.pm
-SHA1 7e5420d1d658a8ccced4d55287b454cd8a7fea7f t/t1300-repo-config.t
+SHA1 34c0acc86d479971c0723abac2dc4bbbca3247bb t/comment.t
+SHA1 0e98fd5383d929fbe63e3513a7697478c3abbf51 t/encoding.t
+SHA1 ee64f33ab3c8be5994f76b698d00964ed2c0717c t/lib/TestConfig.pm
+SHA1 24a4fbfdeb3268280fa1a10ac5934274c33a9a55 t/t1300-repo-config.t
 SHA1 53b21b0f0227909dd299d8adb033f5aff8f5fc42 t/util/translate.pl
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAk9EUzYACgkQMflWJZZAbqBf7gCfWJ87ZothsUpUK3A2W2j+WffM
-xfwAoK2GUknpP+ZOZiuoqgvcw5NZivjc
-=WA2D
+iEYEARECAAYFAlAkubIACgkQMflWJZZAbqDJIwCgwOtVormBxqjZCuHBuXfYq4mc
+p90AoLakBgmor5nivMnAUl3Hz0yOCkCh
+=8Lcg
 -----END PGP SIGNATURE-----
