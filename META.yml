@@ -21,9 +21,10 @@ no_index:
     - t
     - xt
 requires:
-  Any::Moose: 0
+  Moo: 0
+  MooX::Types::MooseLike: 0
   perl: 5.8.0
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/bestpractical/config-gitlike
-version: 1.10
+version: 1.11
