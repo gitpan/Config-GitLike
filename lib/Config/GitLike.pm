@@ -1,6 +1,6 @@
 package Config::GitLike;
 use Moo;
-use MooX::Types::MooseLike::Base qw(Bool HashRef ArrayRef Maybe Str);
+use MooX::Types::MooseLike::Base qw(Bool HashRef ArrayRef Maybe Str Int);
 
 use File::Spec;
 use Cwd;
@@ -8,7 +8,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 
 
 has 'confname' => (
@@ -68,6 +68,18 @@ has 'cascade' => (
 has 'encoding' => (
     is => 'rw',
     isa => Maybe[Str],
+);
+
+has 'include' => (
+    is => 'rw',
+    isa => Str,
+    default => sub { "include.path" },
+);
+
+has 'max_depth' => (
+    is => 'rw',
+    isa => Int,
+    default => sub { 10 },
 );
 
 sub set_multiple {
@@ -160,7 +172,6 @@ sub _read_config {
 
 sub load_file {
     my $ref = shift;
-    my ($filename) = @_;
 
     my $self;
     if (ref $ref) {
@@ -170,31 +181,71 @@ sub load_file {
         $self = $ref->new( confname => "" );
     }
 
-    # Do some canonicalization
-    $filename =~ s/~/$ENV{'HOME'}/g;
-    $filename = File::Spec->rel2abs($filename);
+    unshift @_, "filename" if @_ % 2;
+    my %args = (
+        filename => undef,
+        silent   => 0,
+        relative => Cwd::cwd(),
+        depth    => 0,
+        force    => 0,
+        includes => 1,
+        @_,
+    );
 
-    return $self->data if grep {$_ eq $filename} @{$self->config_files};
+    my $filename = $args{filename};
+
+    # Do some canonicalization
+    $filename =~ s/^~/$ENV{'HOME'}/g;
+    $filename = Cwd::abs_path( File::Spec->rel2abs($filename, $args{relative}) )
+        || $filename;
+
+    return $self->data if grep {$_ eq $filename} @{$self->config_files}
+        and not $args{force};
 
     my $c = $self->_read_config($filename);
+    return $self->data if not $c and $args{silent};
     unless (defined $c) {
         die "Failed to load $filename: $!\n" if not ref $ref;
         return;
     }
 
+    # Note this filename as having been loaded
+    push @{$self->config_files}, $filename;
+
+    $self->set_multiple( $self->include ) if $self->include
+        and $args{includes};
+
     $self->data({}) unless $self->is_loaded;
     $self->parse_content(
         content  => $c,
         callback => sub {
+            my %def = @_;
             $self->define(@_, origin => $filename);
+
+            return unless $self->include and $args{includes};
+            my ($sec, $subsec, $name) = _split_key($self->include);
+            return unless lc( $def{section} || '') eq lc( $sec || '');
+            return unless ($def{subsection} || '') eq ($subsec || '');
+            return unless lc( $def{name} || '')    eq lc( $name || '');
+
+            die "Exceeded maximum include depth (".$self->max_depth.") ".
+                "while including $def{value} from $filename"
+                    if $args{depth} > $self->max_depth;
+
+            my (undef, $dir, undef) = File::Spec->splitpath($filename);
+
+            $self->load_file(
+                filename => $def{value},
+                silent   => 1,
+                relative => $dir,
+                depth    => $args{depth}+1,
+                force    => 1,
+            );
         },
         error    => sub {
             error_callback( @_, filename => $filename );
         },
     );
-
-    # note this filename as having been loaded
-    push @{$self->config_files}, $filename;
 
     return $self->data;
 }
@@ -1655,6 +1706,28 @@ This method can also be called as a class method, which will die if the
 file cannot be read.  If called as an instance method, returns undef on
 failure.
 
+This method may also be passed additional key-value parameters which
+control how the file is loaded:
+
+=over
+
+=item silent
+
+Defaults to off; if set, merely returns instead of die'ing if the file
+cannot be found or read.
+
+=item includes
+
+Defaults to on; if passed a false value, ignores the L</include>
+directive.
+
+=item force
+
+Defaults to off; if set, will re-load a file even if it was previously
+loaded.
+
+=back
+
 =head2 parse_content
 
 Parameters:
@@ -1704,6 +1777,15 @@ an exception with a useful message detailing the line number, position on
 the line, and contents of the bad line; if you find the need to use
 L<"parse_content"> elsewhere, you may find it useful as well.
 
+=head2 include ( $name )
+
+When reading configuration files, Git versions 1.7.10 and later parse
+the C<include.path> key as a directive to include an additional
+configuration file.  This option controls the equivalent behavior;
+setting it to a false value will disable inclusion, and any true value
+will be taken as the name of the configuration parameter which controls
+inclusion.  Defaults to C<include.path>, as Git does.
+
 =head2 set_multiple( $name )
 
 Mark the key string C<$name> as containing multiple values.
@@ -1723,7 +1805,7 @@ Parameters:
     name => 'str'
     value => 'str'
 
-Given a section, a key name, and a value¸ store this information
+Given a section, a key name, and a value, store this information
 in memory in the config object.
 
 Returns the value that was just defined on success, or undef
