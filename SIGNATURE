@@ -14,24 +14,24 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 6782a3611f031f659ab9762ee479bb452841887d Changes
+SHA1 3c5b5d15e2a751c9715da6eed0c34e1d4d4244e7 Changes
 SHA1 a5f44319e842c051869036cc24fc6e336166716b MANIFEST
-SHA1 ca2c62e83a51e50efc087ae922886f2f4d7095ff META.yml
+SHA1 a14236f2127273f6f17a08ab1715c7adc40af3c3 META.yml
 SHA1 4519a356848fefbe4023d2df67470e756b8e6d7f Makefile.PL
-SHA1 8a924add836b60fb23b25c8506d45945e02f42f4 inc/Module/Install.pm
-SHA1 2d0fad3bf255f8c1e7e1e34eafccc4f595603ddc inc/Module/Install/Base.pm
-SHA1 f0e01fff7d73cd145fbf22331579918d4628ddb0 inc/Module/Install/Can.pm
+SHA1 dc13ce0dbb488a5de81c3f6519ee31acda17397a inc/Module/Install.pm
+SHA1 91c20cbda8ca41b4e8f9e0390faff635c2ebe839 inc/Module/Install/Base.pm
+SHA1 eaf50ccbacecb797f0527deb0221c8264f6c8bd8 inc/Module/Install/Can.pm
 SHA1 57890d379d1c66da7743cf1a07ebae00e078a4f2 inc/Module/Install/ExtraTests.pm
-SHA1 7328966e4fda0c8451a6d3850704da0b84ac1540 inc/Module/Install/Fetch.pm
-SHA1 b62ca5e2d58fa66766ccf4d64574f9e1a2250b34 inc/Module/Install/Makefile.pm
-SHA1 1aa925be410bb3bfcd84a16985921f66073cc1d2 inc/Module/Install/Metadata.pm
-SHA1 e4196994fa75e98bdfa2be0bdeeffef66de88171 inc/Module/Install/Win32.pm
-SHA1 c3a6d0d5b84feb3280622e9599e86247d58b0d18 inc/Module/Install/WriteAll.pm
-SHA1 72f59af74b5ad838815267b8d1571dc534e3a1b1 lib/Config/GitLike.pm
+SHA1 363c8931cc183444907684b71d6a379e4fc8edcb inc/Module/Install/Fetch.pm
+SHA1 26ae1c0f5f352037b560414f216d7e3ac682f936 inc/Module/Install/Makefile.pm
+SHA1 ff97eb025b44c343d026c2a56a73d50c65319e95 inc/Module/Install/Metadata.pm
+SHA1 4c5ce519d404e242418f51dfe761287469e18e3a inc/Module/Install/Win32.pm
+SHA1 47a52cf8719a283c0efa2edab0088b5d67e0f23a inc/Module/Install/WriteAll.pm
+SHA1 7c58fa98985cc6965bed40ecffec9a5f66408e0b lib/Config/GitLike.pm
 SHA1 806e7cb2ac15a460866e1e1c9c3984ad41d2f850 lib/Config/GitLike/Cascaded.pm
 SHA1 a15b556bdedea16668a170ea52e2ff6f415b7295 lib/Config/GitLike/Git.pm
 SHA1 8c30f69743e7a9d743d7206f2306ff9f12bb59a0 t/00_use.t
-SHA1 21719c6e6474a3ef23a0e73dabeb7259835b146f t/casing.t
+SHA1 c790ef9b8eacf745879d8a2d21811804b2ac5ffe t/casing.t
 SHA1 34c0acc86d479971c0723abac2dc4bbbca3247bb t/comment.t
 SHA1 0e98fd5383d929fbe63e3513a7697478c3abbf51 t/encoding.t
 SHA1 e884df4ffae7428768c76b54882ba3872d5a3b47 t/lib/TestConfig.pm
@@ -40,7 +40,7 @@ SHA1 53b21b0f0227909dd299d8adb033f5aff8f5fc42 t/util/translate.pl
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAlNXI5AACgkQMflWJZZAbqD7xwCguYIFr97su2RrGLOdh9izspHg
-IkcAoLDN7fh43aFgCs3AmUU3Sl67gA4y
-=8b50
+iEYEARECAAYFAlN74J8ACgkQMflWJZZAbqCu7ACfXWkxqyNflAToVtvtIqkbErX5
+jj8Ani+Qi6zHG4G4ZYnbwdpJdRG1IZkp
+=k97U
 -----END PGP SIGNATURE-----
