@@ -8,7 +8,7 @@ use Scalar::Util qw(openhandle);
 use Fcntl qw(O_CREAT O_EXCL O_WRONLY);
 use 5.008;
 
-our $VERSION = '1.14';
+our $VERSION = '1.15';
 
 
 has 'confname' => (
@@ -196,7 +196,7 @@ sub load_file {
 
     # Do some canonicalization
     $filename =~ s/^~/$ENV{'HOME'}/g;
-    $filename = Cwd::abs_path( File::Spec->rel2abs($filename, $args{relative}) )
+    $filename = eval { Cwd::abs_path( File::Spec->rel2abs($filename, $args{relative}) ) }
         || $filename;
 
     return $self->data if grep {$_ eq $filename} @{$self->config_files}
